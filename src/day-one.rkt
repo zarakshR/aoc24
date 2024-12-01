@@ -12,7 +12,7 @@
 
     (let process-line ([lefts (treelist)]
                        [rights (treelist)]
-                       [counts (hash)])
+                       [counts (hasheq)])
       (match (read-line input-port)
         [(? eof-object?)
          (values (treelist-sort lefts <) (treelist-sort rights <) counts)]
