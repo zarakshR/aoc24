@@ -6,46 +6,43 @@
 
   (define input-file-name "inputs/1.txt")
 
-  (define (process-input input-port)
-    (define (process-input_ lefts rights right-counts)
-      (let ([line (read-line input-port)])
-        (if (eof-object? line)
-            ; TODO: maintain `lefts`, `rights` in sorted order,
-            ;   to avoid O(n logn) sorting here
-            (values (treelist-sort lefts <)
-                    (treelist-sort rights <)
-                    right-counts)
-            (match-let ([(list l r) (map string->number (string-split line))])
-              (process-input_ (treelist-add lefts l)
-                              (treelist-add rights r)
-                              (hash-update right-counts r add1 0))))))
+  (define (process-lines input-port)
+    (define (parse-line line)
+      (map string->number (string-split line)))
 
-    (process-input_ (treelist) (treelist) (hash)))
+    (let process-line ([lefts (treelist)]
+                       [rights (treelist)]
+                       [counts (hash)])
+      (match (read-line input-port)
+        [(? eof-object?)
+         (values (treelist-sort lefts <) (treelist-sort rights <) counts)]
+        [(app parse-line (list l r))
+         (process-line (treelist-add lefts l)
+                       (treelist-add rights r)
+                       (hash-update counts r add1 0))])))
 
   (define (solve-part-one lefts rights)
-    (let ([sum 0])
-      (for/list ([l (in-treelist lefts)]
-                 [r (in-treelist rights)])
-        (set! sum (+ sum (abs (- l r)))))
+    (let ([total-distance 0])
+      (for ([l (in-treelist lefts)]
+            [r (in-treelist rights)])
+        (set! total-distance (+ total-distance (abs (- l r)))))
+      total-distance))
 
-      sum))
-
-  (define (solve-part-two lefts right-counts)
+  (define (solve-part-two lefts counts)
     (let ([similarity-score 0])
-      (for/list ([l (in-treelist lefts)])
+      (for ([l (in-treelist lefts)])
         (set! similarity-score
-              (+ similarity-score (* l (hash-ref right-counts l 0)))))
-
+              (+ similarity-score (* l (hash-ref counts l 0)))))
       similarity-score))
 
   ; lefts : treelist?
   ;   the left list of location IDs
   ; rights : treelist?
   ;   the right list of location IDs
-  ; right-counts : hash?
+  ; counts : hash?
   ;   maps all numbers in `rights` to the number of times they appear
-  (match-define-values (lefts rights right-counts)
-    (call-with-input-file input-file-name process-input))
+  (match-define-values (lefts rights counts)
+    (call-with-input-file input-file-name process-lines))
 
   ; cache solutions
   (define part-one
@@ -53,5 +50,5 @@
       (thunk (force solution))))
 
   (define part-two
-    (let ([solution (delay (solve-part-two lefts right-counts))])
+    (let ([solution (delay (solve-part-two lefts counts))])
       (thunk (force solution)))))
