@@ -3,8 +3,8 @@
 
   (provide load-data)
 
-  ; TODO: use buffers and string views for fast reading
-  ;   this currently takes ~ 10 seconds for big boy inputs
+  ; TODO: use buffers and string views for fast reading this currently takes
+  ;   ~ 10 seconds for big boy inputs
   (define (process-lines input-port)
     (define (parse-line line)
       (map string->number (string-split line)))
@@ -14,14 +14,16 @@
     (for/fold ([lefts (treelist)]
                [rights (treelist)]
                [counts (hasheq)]
-               #:result (values (treelist-sort lefts <)
-                                (treelist-sort rights <)
-                                counts))
+               ; TODO: maintain `lefts`, `rights` in sorted order to avoid
+               ;  O(n logn) sorting here
+               #:result
+               (values (treelist-sort lefts <) (treelist-sort rights <) counts))
               ([line (port->lines input-port)])
       (match (parse-line line)
-        [(list l r) (values (treelist-add lefts l)
-                            (treelist-add rights r)
-                            (increment-count counts r))])))
+        [(list l r)
+         (values (treelist-add lefts l)
+                 (treelist-add rights r)
+                 (increment-count counts r))])))
 
   (define (solve-part-one lefts rights)
     (let ([total-distance 0])
@@ -46,7 +48,7 @@
     ;   maps all numbers in `rights` to the number of times they appear
     (match-define-values (lefts rights counts) (process-lines input-port))
 
-  ; cache solutions
+    ; cache solutions
     (define part-one
       (let ([solution (delay (solve-part-one lefts rights))])
         (thunk (force solution))))
