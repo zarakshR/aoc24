@@ -1,10 +1,7 @@
 (module day-one racket
   (require racket/treelist)
 
-  (provide part-one
-           part-two)
-
-  (define input-file-name "inputs/1.txt")
+  (provide load-data)
 
   ; TODO: use buffers and string views for fast reading
   ;   this currently takes ~ 10 seconds for big boy inputs
@@ -40,20 +37,22 @@
               (+ similarity-score (* l (hash-ref counts l 0)))))
       similarity-score))
 
-  ; lefts : treelist?
-  ;   the left list of location IDs
-  ; rights : treelist?
-  ;   the right list of location IDs
-  ; counts : hash?
-  ;   maps all numbers in `rights` to the number of times they appear
-  (match-define-values (lefts rights counts)
-    (call-with-input-file input-file-name process-lines))
+  (define (load-data input-port)
+    ; lefts : treelist?
+    ;   the left list of location IDs
+    ; rights : treelist?
+    ;   the right list of location IDs
+    ; counts : hash?
+    ;   maps all numbers in `rights` to the number of times they appear
+    (match-define-values (lefts rights counts) (process-lines input-port))
 
   ; cache solutions
-  (define part-one
-    (let ([solution (delay (solve-part-one lefts rights))])
-      (thunk (force solution))))
+    (define part-one
+      (let ([solution (delay (solve-part-one lefts rights))])
+        (thunk (force solution))))
 
-  (define part-two
-    (let ([solution (delay (solve-part-two lefts counts))])
-      (thunk (force solution)))))
+    (define part-two
+      (let ([solution (delay (solve-part-two lefts counts))])
+        (thunk (force solution))))
+
+    (values part-one part-two)))
