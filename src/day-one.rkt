@@ -1,6 +1,4 @@
 (module day-one racket
-  (require racket/treelist)
-
   (provide load-data)
 
   ; TODO: use buffers and string views for fast reading this currently takes
@@ -11,28 +9,22 @@
     (define (increment-count ht k)
       (hash-update ht k add1 0))
 
-    (for/fold ([lefts (treelist)]
-               [rights (treelist)]
+    (for/fold ([lefts '()]
+               [rights '()]
                [counts (hasheq)]
                ; TODO: maintain `lefts`, `rights` in sorted order to avoid
                ;  O(n logn) sorting here
-               #:result
-               (values (treelist-sort lefts <) (treelist-sort rights <) counts))
+               #:result (values (sort lefts <) (sort rights <) counts))
               ([line (port->lines input-port)])
       (match (parse-line line)
         [(list l r)
-         (values (treelist-add lefts l)
-                 (treelist-add rights r)
-                 (increment-count counts r))])))
+         (values (cons l lefts) (cons r rights) (increment-count counts r))])))
 
   (define (solve-part-one lefts rights)
-    (for/sum ([l (in-treelist lefts)]
-              [r (in-treelist rights)])
-      (abs (- l r))))
+    (for/sum ([l lefts] [r rights]) (abs (- l r))))
 
   (define (solve-part-two lefts counts)
-    (for/sum ([l (in-treelist lefts)])
-      (* l (hash-ref counts l 0))))
+    (for/sum ([l lefts]) (* l (hash-ref counts l 0))))
 
   (define (load-data input-port)
     ; lefts : treelist?
