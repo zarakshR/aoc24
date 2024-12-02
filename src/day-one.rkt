@@ -6,20 +6,25 @@
 
   (define input-file-name "inputs/1.txt")
 
+  ; TODO: use buffers and string views for fast reading
+  ;   this currently takes ~ 10 seconds for big boy inputs
   (define (process-lines input-port)
     (define (parse-line line)
       (map string->number (string-split line)))
+    (define (increment-count ht k)
+      (hash-update ht k add1 0))
 
-    (let process-line ([lefts (treelist)]
-                       [rights (treelist)]
-                       [counts (hasheq)])
-      (match (read-line input-port)
-        [(? eof-object?)
-         (values (treelist-sort lefts <) (treelist-sort rights <) counts)]
-        [(app parse-line (list l r))
-         (process-line (treelist-add lefts l)
-                       (treelist-add rights r)
-                       (hash-update counts r add1 0))])))
+    (for/fold ([lefts (treelist)]
+               [rights (treelist)]
+               [counts (hasheq)]
+               #:result (values (treelist-sort lefts <)
+                                (treelist-sort rights <)
+                                counts))
+              ([line (port->lines input-port)])
+      (match (parse-line line)
+        [(list l r) (values (treelist-add lefts l)
+                            (treelist-add rights r)
+                            (increment-count counts r))])))
 
   (define (solve-part-one lefts rights)
     (let ([total-distance 0])
