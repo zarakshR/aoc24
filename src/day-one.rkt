@@ -26,18 +26,13 @@
                  (increment-count counts r))])))
 
   (define (solve-part-one lefts rights)
-    (let ([total-distance 0])
-      (for ([l (in-treelist lefts)]
-            [r (in-treelist rights)])
-        (set! total-distance (+ total-distance (abs (- l r)))))
-      total-distance))
+    (for/sum ([l (in-treelist lefts)]
+              [r (in-treelist rights)])
+      (abs (- l r))))
 
   (define (solve-part-two lefts counts)
-    (let ([similarity-score 0])
-      (for ([l (in-treelist lefts)])
-        (set! similarity-score
-              (+ similarity-score (* l (hash-ref counts l 0)))))
-      similarity-score))
+    (for/sum ([l (in-treelist lefts)])
+      (* l (hash-ref counts l 0))))
 
   (define (load-data input-port)
     ; lefts : treelist?
