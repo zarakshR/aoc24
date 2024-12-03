@@ -1,46 +1,51 @@
-;TODO: hand-write parser
 (module day-three racket
   (provide load-data)
 
-  (define (parse line)
-    (define instr-re (pregexp "mul\\(\\d{1,3},\\d{1,3}\\)|do\\(\\)|don't\\(\\)"))
+  ; data Instr = Mul Integer Integer | Do | Dont
+  (define (parse source)
+    (define instr-re
+      (pregexp "(mul)\\((\\d{1,3}),(\\d{1,3})\\)|(do)\\(\\)|(don't)\\(\\)"))
+    (define/match (parse-instr instr-text)
+      [((list "mul" (app string->number x) (app string->number y) #f #f))
+       (list 'mul x y)]
+      [((list #f #f #f #f "don't")) 'dont]
+      [((list #f #f #f "do" #f)) 'do])
 
-    (define/match (extract-instr ins)
-      [((regexp #rx"^don")) 'dont]
-      [((regexp #rx"^do")) 'do]
-      [((regexp #rx"^mul"))
-       (let ([nums (regexp-match* #px"\\d{1,3}" ins)])
-         (cons 'mul (map string->number nums)))])
+    (map parse-instr (regexp-match* instr-re source #:match-select cdr)))
 
-    (map extract-instr (regexp-match* instr-re line)))
+  (define (interpret-part-one program)
+    (for/sum ([i program] #:when (not (or (equal? 'do i) (equal? 'dont i)))
+                          #:do [(define mul-result (* (second i) (third i)))])
+             mul-result))
 
-  (define (interpret instrs)
-    (let loop ([enabled #t]
-               [instrs instrs]
-               [sum 0])
-      (match instrs
-        ['() sum]
-        [(list-rest 'do cdr) (loop #t cdr sum)]
-        [(list-rest 'dont cdr) (loop #f cdr sum)]
-        [(list-rest (list 'mul x y) cdr)
-         (loop enabled cdr (if enabled (+ sum (* x y)) sum))])))
+  (define (interpret-part-two program)
+    (for/fold ([to-skip #f]
+               [sum 0]
+               #:result sum)
+              ([i program])
+      (match i
+        ['do (values #f sum)]
+        ['dont (values #t sum)]
+        [(list 'mul x y)
+         (if to-skip
+             (values to-skip sum)
+             (values to-skip (+ sum (* x y))))])))
 
   ;> ,time (call-with-input-file "inputs/3.txt" load-data)
-  ;  cpu time: 2ms = 2ms + 0ms gc; real time: 2ms
+  ;  cpu time: 4ms = 4ms + 0ms gc; real time: 4ms
   (define (load-data input-port)
-    (define data (foldr append '() (map parse (port->lines input-port))))
+    (define data (parse (port->string input-port)))
 
     ;> ,time (part-one)
     ;  cpu time: 0ms = 0ms + 0ms gc; real time: 0ms
     (define part-one
-      (let* ([mul? (lambda (ins) (and (list? ins) (equal? 'mul (car ins))))]
-             [solution (delay (interpret (filter mul? data)))])
+      (let ([solution (delay (interpret-part-one data))])
         (thunk (force solution))))
 
     ;> ,time (part-two)
     ;  cpu time: 0ms = 0ms + 0ms gc; real time: 0ms
     (define part-two
-      (let ([solution (delay (interpret data))])
+      (let ([solution (delay (interpret-part-two data))])
         (thunk (force solution))))
 
     (values part-one part-two)))
